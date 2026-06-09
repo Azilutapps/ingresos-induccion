@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "Worker": {
+      "title": "Worker",
+      "description": "A registered worker in the Azilut S.A. payroll system",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "The full name of the operator"
+        },
+        "dni": {
+          "type": "string",
+          "description": "The unique D.N.I. number of the operator"
+        },
+        "puesto": {
+          "type": "string",
+          "description": "The worker's official job description or trade"
+        },
+        "obra": {
+          "type": "string",
+          "description": "The construction site name where the worker is stationed"
+        },
+        "pin": {
+          "type": "string",
+          "description": "The 4 to 6 digit numeric login pin"
+        },
+        "duracion": {
+          "type": "string",
+          "description": "Contract duration or safety induction training length"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The record creation date"
+        }
+      },
+      "required": ["fullName", "dni", "puesto", "obra", "pin", "duracion"]
+    },
+    "Signature": {
+      "title": "Signature",
+      "description": "Digital card signature confirming acceptance of the 21 mandatory items",
+      "type": "object",
+      "properties": {
+        "certificateCode": {
+          "type": "string",
+          "description": "Unique compliance receipt code generated dynamically"
+        },
+        "workerId": {
+          "type": "string",
+          "description": "The associated worker ID reference"
+        },
+        "workerName": {
+          "type": "string",
+          "description": "Worker name"
+        },
+        "workerDni": {
+          "type": "string",
+          "description": "Worker D.N.I."
+        },
+        "workerRole": {
+          "type": "string",
+          "description": "Worker job description"
+        },
+        "workName": {
+          "type": "string",
+          "description": "The active construction site"
+        },
+        "workDuration": {
+          "type": "string",
+          "description": "Duration"
+        },
+        "signedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Dynamic timestamp when the signature was received"
+        }
+      },
+      "required": ["certificateCode", "workerId", "workerName", "workerDni", "workerRole", "workName", "workDuration"]
+    }
+  },
+  "firestore": {
+    "workers/{workerId}": {
+      "schema": "Worker",
+      "description": "Workers registered in the online Azilut database"
+    },
+    "signatures/{signatureId}": {
+      "schema": "Signature",
+      "description": "A list of all worker-signed policies and certifications synced online"
+    }
+  }
+}

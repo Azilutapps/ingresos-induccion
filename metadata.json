@@ -1,0 +1,6 @@
+{
+  "name": "Manual de Bolsillo - Azilut S.A.",
+  "description": "Mini manual interactivo de bolsillo para difundir las políticas integrales de Calidad, Seguridad, Alcohol/Drogas y Conducción de Azilut S.A.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

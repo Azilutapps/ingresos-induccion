@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety catch-all — denies anything not explicitly matched
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ID validation to block resource poisoning
+    function isValidId(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation helper for Operator Profiles
+    function isValidWorker(data) {
+      return data.fullName is string && data.fullName.size() <= 100 &&
+             data.dni is string && data.dni.size() <= 20 &&
+             data.puesto is string && data.puesto.size() <= 100 &&
+             data.obra is string && data.obra.size() <= 150 &&
+             data.pin is string && data.pin.size() <= 10 &&
+             data.duracion is string && data.duracion.size() <= 50;
+    }
+
+    // Validation helper for digital signatures
+    function isValidSignature(data) {
+      return data.certificateCode is string && data.certificateCode.size() <= 40 &&
+             data.workerId is string && data.workerId.size() <= 64 &&
+             data.workerName is string && data.workerName.size() <= 100 &&
+             data.workerDni is string && data.workerDni.size() <= 20 &&
+             data.workerRole is string && data.workerRole.size() <= 100 &&
+             data.workName is string && data.workName.size() <= 150 &&
+             data.workDuration is string && data.workDuration.size() <= 50;
+    }
+
+    // Workers collection matching
+    match /workers/{workerId} {
+      allow read, write: if true;
+    }
+
+    // Signatures collection matching
+    match /signatures/{signatureId} {
+      allow read, write: if true;
+    }
+  }
+}
