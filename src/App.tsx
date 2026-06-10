@@ -247,6 +247,17 @@ export default function App() {
   const [loginPin, setLoginPin] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
 
+  // Admin PIN configuration / Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("azilut_admin_authorized") === "true";
+    }
+    return false;
+  });
+  const [adminPinInput, setAdminPinInput] = useState<string>("");
+  const [adminPinError, setAdminPinError] = useState<string>("");
+  const ADMIN_PIN_DEFAULT = "1234"; // PIN de fábrica por defecto para desarrollo o producción (puedes cambiarlo directamente aquí)
+
   // Sync current logged-in user with form fields & localStorage
   useEffect(() => {
     if (currentUser) {
@@ -1109,7 +1120,7 @@ export default function App() {
                         </form>
 
                         {/* ACCESO RÁPIDO INTERACTIVO DEMO */}
-                        {currentRoleView === "admin" && (
+                        {currentRoleView === "admin" && isAdminAuthenticated && (
                           <div className="w-full border-t border-slate-850 mt-4 pt-3 text-center">
                             <span className="text-[7.5px] font-mono text-slate-500 block uppercase tracking-wider mb-1.5">Nómina Autorizada (Acceso Rápido Administrador)</span>
                             <div className="grid grid-cols-1 gap-1">
@@ -1618,27 +1629,112 @@ export default function App() {
         {/* COLUMNA DERECHA (DESCENTRALIZACIÓN, COMPARTIR Y ADMÍN DESK) - 7 SPAN */}
         {currentRoleView === "admin" && (
           <div className="lg:col-span-7 space-y-6">
-          
-            {/* CONSOLA DE ALTA DE OPERARIOS (ADMINISTRADOR) */}
-            <div className={`bg-slate-900/80 border ${editingWorkerId ? 'border-red-500/30 shadow-lg shadow-red-950/5' : 'border-slate-800'} p-6 rounded-2xl relative overflow-hidden space-y-4 transition-all duration-300`}>
-              <div className="absolute top-0 right-0 w-24 h-24 bg-red-650/5 rounded-bl-full pointer-events-none" />
-              
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg transition-all ${editingWorkerId ? 'bg-red-500/15 text-red-450 animate-pulse' : 'bg-red-650/10 text-red-500'}`}>
-                    <Users className="w-5.5 h-5.5" />
+            {!isAdminAuthenticated ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden space-y-5 shadow-xl text-left"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-red-650/5 rounded-bl-full pointer-events-none" />
+                
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                  <div className="p-2.5 bg-red-600/10 text-red-500 rounded-lg">
+                    <Lock className="w-5.5 h-5.5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-white">
-                      {editingWorkerId ? "Modificar Datos de Operario" : "Consola de Alta de Operarios"}
-                    </h3>
-                    <p className="text-slate-450 text-[10px] font-mono leading-none mt-0.5">
-                      {editingWorkerId ? "EDICIÓN EN TIEMPO REAL ONLINE" : "REGISTRO DE NÓMINA INDUCCIÓN"}
-                    </p>
+                    <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Acceso Administrador Regulado</h3>
+                    <p className="text-slate-455 text-[9px] font-mono leading-none mt-0.5">SISTEMA INTEGRADO DE GESTIÓN (S.I.G.)</p>
                   </div>
                 </div>
-                <span className="bg-red-950/80 text-red-400 border border-red-900/30 text-[10px] px-2.5 py-0.5 rounded font-mono uppercase font-extrabold shadow-sm">Administrador</span>
-              </div>
+
+                <p className="text-slate-350 text-xs leading-relaxed">
+                  Ingrese el PIN de acceso oficial para ingresar a la nómina de operarios, visualizar firmas digitales registradas, emitir credenciales y administrar la difusión de la empresa.
+                </p>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (adminPinInput === ADMIN_PIN_DEFAULT) {
+                      setIsAdminAuthenticated(true);
+                      sessionStorage.setItem("azilut_admin_authorized", "true");
+                      setAdminPinError("");
+                    } else {
+                      setAdminPinError("Código de acceso incorrecto. Verifique con el encargado del S.I.G.");
+                    }
+                  }}
+                  className="space-y-4 max-w-sm"
+                >
+                  <div>
+                    <label className="text-[9px] font-mono text-slate-450 uppercase tracking-wider block mb-1">PIN DE ACCESO</label>
+                    <input
+                      type="password"
+                      required
+                      value={adminPinInput}
+                      onChange={(e) => {
+                        setAdminPinInput(e.target.value);
+                        setAdminPinError("");
+                      }}
+                      className="bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-red-500/80 rounded-xl px-4 py-3 text-sm w-full text-slate-200 font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-red-500/30 transition-all text-center"
+                      placeholder="••••"
+                      maxLength={6}
+                    />
+                    {adminPinError && (
+                      <p className="text-[11px] text-red-400 mt-2 font-mono flex items-center gap-1 leading-normal">
+                        ⚠️ {adminPinError}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-red-650 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-red-750/15"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-red-200" />
+                    Validar PIN Director
+                  </button>
+                  
+                  <p className="text-[9.5px] text-slate-500 text-center font-mono leading-normal pt-1">
+                    PIN por defecto para desarrollo o entrega: <span className="text-slate-450 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">{ADMIN_PIN_DEFAULT}</span>
+                  </p>
+                </form>
+              </motion.div>
+            ) : (
+              <>
+                {/* CONSOLA DE ALTA DE OPERARIOS (ADMINISTRADOR) */}
+                <div className={`bg-slate-900/80 border ${editingWorkerId ? 'border-red-500/30 shadow-lg shadow-red-950/5' : 'border-slate-800'} p-6 rounded-2xl relative overflow-hidden space-y-4 transition-all duration-300`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-red-650/5 rounded-bl-full pointer-events-none" />
+                  
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg transition-all ${editingWorkerId ? 'bg-red-500/15 text-red-450 animate-pulse' : 'bg-red-650/10 text-red-500'}`}>
+                        <Users className="w-5.5 h-5.5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-extrabold text-white">
+                          {editingWorkerId ? "Modificar Datos de Operario" : "Consola de Alta de Operarios"}
+                        </h3>
+                        <p className="text-slate-450 text-[10px] font-mono leading-none mt-0.5">
+                          {editingWorkerId ? "EDICIÓN EN TIEMPO REAL ONLINE" : "REGISTRO DE NÓMINA INDUCCIÓN"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden sm:inline-block bg-red-950/80 text-red-400 border border-red-900/30 text-[10px] px-2.5 py-1 rounded font-mono uppercase font-extrabold shadow-sm">Administrador</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAdminAuthenticated(false);
+                          sessionStorage.removeItem("azilut_admin_authorized");
+                          setAdminPinInput("");
+                        }}
+                        className="bg-slate-950 hover:bg-slate-850 text-red-400 hover:text-red-350 border border-slate-800 hover:border-slate-750 px-2.5 py-1 rounded-lg font-mono text-[9px] uppercase font-bold flex items-center gap-1.5 cursor-pointer transition-all h-7 shadow"
+                        title="Bloquear panel de administrador"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Bloquear</span>
+                      </button>
+                    </div>
+                  </div>
               
               <p className="text-slate-350 text-xs leading-relaxed">
                 {editingWorkerId 
@@ -2241,7 +2337,8 @@ export default function App() {
               </div>
             </div>
           </div>
-
+              </>
+            )}
           </div>
         )}
 
