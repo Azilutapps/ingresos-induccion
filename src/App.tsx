@@ -230,6 +230,8 @@ export default function App() {
   const [certificateCode, setCertificateCode] = useState<string>("");
   const [savedSignatureImg, setSavedSignatureImg] = useState<string>("");
   const [selectedWorkerSignature, setSelectedWorkerSignature] = useState<any | null>(null);
+  const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
+  const [signatureToDelete, setSignatureToDelete] = useState<string | null>(null);
 
   // Form states for creating/editing workers (Administrador)
   const [editingWorkerId, setEditingWorkerId] = useState<string | null>(null);
@@ -482,17 +484,8 @@ export default function App() {
   };
 
   // Administrador: Eliminar trabajador de la nómina
-  const handleRemoveWorker = async (id: string) => {
-    if (confirm("¿Está seguro de que desea dar de baja a este operario en el sistema online?")) {
-      try {
-        await deleteDoc(doc(db, "workers", id));
-        if (currentUser?.id === id) {
-          setCurrentUser(null);
-        }
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `workers/${id}`);
-      }
-    }
+  const handleRemoveWorker = (id: string) => {
+    setWorkerToDelete(id);
   };
 
   // Operario: Iniciar Sesión en el simulador celular
@@ -1532,7 +1525,19 @@ export default function App() {
                                 Enviar a RRHH
                               </button>
                             </div>
-                            
+
+                            <button
+                              onClick={() => {
+                                // Permite volver al formulario de firma sin borrar datos declarados ni checklist de 21 declaraciones
+                                setHasSubmittedSignature(false);
+                              }}
+                              className="w-full bg-amber-600/90 hover:bg-amber-600 text-white font-bold py-1.5 rounded-lg text-[9px] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow border border-amber-500/20 animate-pulse-slow"
+                              title="Corrige tu firma o datos de la credencial sin borrar tu progreso"
+                            >
+                              <Pencil className="w-3 h-3 text-amber-100" />
+                              Rehacer Firma / Editar Datos
+                            </button>
+
                             <div className="grid grid-cols-2 gap-1.5 w-full">
                               <button
                                 onClick={() => {
@@ -1856,8 +1861,7 @@ export default function App() {
                           
                           <button
                             onClick={() => handleRemoveWorker(w.id)}
-                            disabled={workers.length <= 1}
-                            className="text-red-400 hover:text-red-300 disabled:opacity-30 p-1 rounded hover:bg-red-950/20 transition-all cursor-pointer"
+                            className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-950/20 transition-all cursor-pointer"
                             title="Dar de baja en sistema"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1958,13 +1962,22 @@ export default function App() {
                           <span className="truncate"><strong>DURACIÓN ESTIMADA DE LA OBRA:</strong> {sig.workDuration}</span>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded font-mono text-[9px] uppercase font-bold block text-center mb-1">
-                          {sig.certificateCode}
-                        </span>
-                        <span className="text-[8px] text-slate-500 font-mono block">
-                          {new Date(parseInt(sig.id.replace('sig-', '')) || Date.now()).toLocaleTimeString()} - {new Date(parseInt(sig.id.replace('sig-', '')) || Date.now()).toLocaleDateString()}
-                        </span>
+                      <div className="text-right shrink-0 flex items-center gap-2">
+                        <div>
+                          <span className="bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded font-mono text-[9px] uppercase font-bold block text-center mb-1">
+                            {sig.certificateCode}
+                          </span>
+                          <span className="text-[8px] text-slate-500 font-mono block">
+                            {new Date(parseInt(sig.id.replace('sig-', '')) || Date.now()).toLocaleTimeString()} - {new Date(parseInt(sig.id.replace('sig-', '')) || Date.now()).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSignatureToDelete(sig.id)}
+                          className="text-red-400 hover:text-red-350 p-1.5 rounded hover:bg-red-950/20 transition-all cursor-pointer"
+                          title="Eliminar esta Acta/Credencial permanentemente"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))
@@ -2362,6 +2375,122 @@ export default function App() {
                 </button>
               </div>
 
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* OVERLAY DE CONFIRMACIÓN PARA BAJA DE OPERARIO */}
+      <AnimatePresence>
+        {workerToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-55 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left"
+            >
+              <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="text-center space-y-1">
+                <h3 className="text-white font-extrabold text-sm uppercase tracking-wider">Confirmar Baja</h3>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  ¿Está seguro de que desea dar de baja al operario{" "}
+                  <strong className="text-white">
+                    {workers.find((w) => w.id === workerToDelete)?.fullName || "este operario"}
+                  </strong>{" "}
+                  en el sistema online? Ya no se le permitirá iniciar sesión con su PIN.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setWorkerToDelete(null)}
+                  className="py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const id = workerToDelete;
+                    setWorkerToDelete(null);
+                    try {
+                      await deleteDoc(doc(db, "workers", id));
+                      if (currentUser?.id === id) {
+                        setCurrentUser(null);
+                      }
+                    } catch (err) {
+                      handleFirestoreError(err, OperationType.DELETE, `workers/${id}`);
+                    }
+                  }}
+                  className="py-2.5 bg-red-650 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-red-700/25"
+                >
+                  Dar de baja
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* OVERLAY DE CONFIRMACIÓN PARA BORRAR CREDENCIAL DE FIRMA */}
+      <AnimatePresence>
+        {signatureToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-55 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left"
+            >
+              <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="text-center space-y-1">
+                <h3 className="text-white font-extrabold text-sm uppercase tracking-wider">Eliminar Credencial</h3>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  ¿Está seguro de que desea eliminar permanentemente el Acta de conformidad / Credencial del operario{" "}
+                  <strong className="text-white">
+                    {signatures.find((s) => s.id === signatureToDelete)?.workerName || "el operario"}
+                  </strong>? Esto removerá el registro del sistema online.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSignatureToDelete(null)}
+                  className="py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const id = signatureToDelete;
+                    setSignatureToDelete(null);
+                    try {
+                      await deleteDoc(doc(db, "signatures", id));
+                    } catch (err) {
+                      handleFirestoreError(err, OperationType.DELETE, `signatures/${id}`);
+                    }
+                  }}
+                  className="py-2.5 bg-red-650 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-lg shadow-red-700/25"
+                >
+                  Confirmar Eliminar
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
